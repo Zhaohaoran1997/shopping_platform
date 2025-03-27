@@ -46,12 +46,12 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt',
     # Local apps
-    'apps.users',
-    'apps.products',
-    'apps.orders',
-    'apps.coupons',
-    'apps.returns',
-    'apps.cart',
+    'apps.users.apps.UsersConfig',
+    'apps.products.apps.ProductsConfig',
+    'apps.orders.apps.OrdersConfig',
+    'apps.coupons.apps.CouponsConfig',
+    'apps.returns.apps.ReturnsConfig',
+    'apps.cart.apps.CartConfig',
 ]
 
 MIDDLEWARE = [

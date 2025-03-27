@@ -4,10 +4,11 @@ from .models import Cart, CartItem
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
     """购物车管理"""
-    list_display = ['user', 'created_at', 'updated_at']
-    search_fields = ['user__username']
-    readonly_fields = ['created_at', 'updated_at']
-    ordering = ['-updated_at']
+    list_display = ('user', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-updated_at',)
 
 class CartItemInline(admin.TabularInline):
     """购物车商品内联"""
@@ -19,8 +20,8 @@ class CartItemInline(admin.TabularInline):
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
     """购物车商品管理"""
-    list_display = ['cart', 'product', 'quantity', 'selected', 'created_at']
-    list_filter = ['selected', 'created_at']
-    search_fields = ['cart__user__username', 'product__name']
-    readonly_fields = ['created_at', 'updated_at']
-    ordering = ['-created_at'] 
+    list_display = ('cart', 'product', 'quantity', 'selected', 'created_at', 'updated_at')
+    list_filter = ('selected', 'created_at', 'updated_at')
+    search_fields = ('cart__user__username', 'product__name')
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-created_at',) 
