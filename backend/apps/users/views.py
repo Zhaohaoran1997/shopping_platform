@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,6 +9,9 @@ from .serializers import (
     UserAddressSerializer
 )
 from .models import UserAddress
+from django.contrib import admin
+from django.contrib import messages
+from django.urls import reverse
 
 User = get_user_model()
 
@@ -151,3 +154,31 @@ class UserAddressViewSet(viewsets.ModelViewSet):
         address.is_default = True
         address.save()
         return Response({'message': '设置默认地址成功'})
+
+@admin.site.admin_view
+def admin_disable_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if user.is_superuser:
+        messages.error(request, f'不能禁用超级管理员用户 {user.username}')
+    else:
+        user.is_active = False
+        user.save()
+        messages.success(request, f'用户 {user.username} 已禁用')
+    return redirect(reverse('admin:users_user_changelist'))
+
+@admin.site.admin_view
+def admin_enable_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    user.is_active = True
+    user.save()
+    messages.success(request, f'用户 {user.username} 已启用')
+    return redirect(reverse('admin:users_user_changelist'))
+
+@admin.site.admin_view
+def admin_reset_password(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    new_password = User.objects.make_random_password()
+    user.set_password(new_password)
+    user.save()
+    messages.success(request, f'用户 {user.username} 的密码已重置为: {new_password}')
+    return redirect(reverse('admin:users_user_changelist'))

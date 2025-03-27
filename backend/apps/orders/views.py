@@ -8,6 +8,10 @@ from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderCreateSerializer
 from apps.cart.models import CartItem
 from apps.products.models import Product
+from django.contrib import admin
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.urls import reverse
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
@@ -160,4 +164,26 @@ class OrderViewSet(viewsets.ModelViewSet):
                 'district': order.shipping_district,
                 'address': order.shipping_address_detail
             }
-        }) 
+        })
+
+@admin.site.admin_view
+def admin_cancel_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if order.status == 0:  # 待付款
+        order.status = 4  # 已取消
+        order.save()
+        messages.success(request, f'订单 {order.order_no} 已取消')
+    else:
+        messages.error(request, f'订单 {order.order_no} 状态不允许取消')
+    return redirect(reverse('admin:orders_order_changelist'))
+
+@admin.site.admin_view
+def admin_ship_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if order.status == 1:  # 待发货
+        order.status = 2  # 待收货
+        order.save()
+        messages.success(request, f'订单 {order.order_no} 已发货')
+    else:
+        messages.error(request, f'订单 {order.order_no} 状态不允许发货')
+    return redirect(reverse('admin:orders_order_changelist')) 
