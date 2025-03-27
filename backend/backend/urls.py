@@ -26,6 +26,7 @@ urlpatterns = [
     path('cart/', include('apps.cart.urls')),  # 购物车相关API
     path('orders/', include('apps.orders.urls')),  # 订单相关API
     path('coupons/', include('apps.coupons.urls')),  # 消费券相关API
+    path('returns/', include('apps.returns.urls')),  # 退换货相关API
 ]
 
 # 开发环境下添加媒体文件的URL配置
