@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator
 from django.utils import timezone
 
 class Coupon(models.Model):
-    """消费券"""
+    """优惠券"""
     TYPE_CHOICES = (
         (1, '满减券'),
         (2, '折扣券'),
@@ -16,8 +16,8 @@ class Coupon(models.Model):
         (2, '已结束'),
     )
 
-    name = models.CharField(max_length=100, verbose_name='消费券名称')
-    type = models.IntegerField(choices=TYPE_CHOICES, verbose_name='消费券类型')
+    name = models.CharField(max_length=100, verbose_name='优惠券名称')
+    type = models.IntegerField(choices=TYPE_CHOICES, verbose_name='优惠券类型')
     amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -38,7 +38,7 @@ class Coupon(models.Model):
 
     class Meta:
         db_table = 'coupons'
-        verbose_name = '消费券'
+        verbose_name = '优惠券'
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
 
@@ -51,7 +51,7 @@ class Coupon(models.Model):
         super().save(*args, **kwargs)
 
 class UserCoupon(models.Model):
-    """用户消费券"""
+    """用户优惠券"""
     STATUS_CHOICES = (
         (0, '未使用'),
         (1, '已使用'),
@@ -59,25 +59,25 @@ class UserCoupon(models.Model):
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='用户')
-    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, verbose_name='消费券')
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, verbose_name='优惠券')
     status = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name='使用状态')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='领取时间')
     used_at = models.DateTimeField(null=True, blank=True, verbose_name='使用时间')
 
     class Meta:
         db_table = 'user_coupons'
-        verbose_name = '用户消费券'
+        verbose_name = '用户优惠券'
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
-        unique_together = ['user', 'coupon']  # 确保用户不会重复领取同一张消费券
+        unique_together = ['user', 'coupon']  # 确保用户不会重复领取同一张优惠券
 
     def __str__(self):
         return f'{self.user.username} - {self.coupon.name}'
 
     def use(self):
-        """使用消费券"""
+        """使用优惠券"""
         if self.status != 0:
-            raise ValueError('消费券状态不正确')
+            raise ValueError('优惠券状态不正确')
         self.status = 1
         self.used_at = timezone.now()
         self.save()

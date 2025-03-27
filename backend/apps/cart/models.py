@@ -34,7 +34,6 @@ class CartItem(models.Model):
         verbose_name = '购物车商品'
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
-        unique_together = ['cart', 'product']  # 确保同一购物车中不会出现重复商品
 
     def __str__(self):
         return f'{self.cart.user.username}的购物车 - {self.product.name} x {self.quantity}'

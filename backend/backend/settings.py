@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt',
     # Local apps
+    'apps.core.apps.CoreConfig',
     'apps.users.apps.UsersConfig',
     'apps.products.apps.ProductsConfig',
     'apps.orders.apps.OrdersConfig',
