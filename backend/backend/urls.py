@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('apps.users.urls')),  # 用户相关API
     path('products/', include('apps.products.urls')),  # 商品相关API
+    path('cart/', include('apps.cart.urls')),  # 购物车相关API
 ]
 
 # 开发环境下添加媒体文件的URL配置
