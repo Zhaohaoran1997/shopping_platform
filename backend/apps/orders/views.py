@@ -14,11 +14,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Order.objects.filter(user=self.request.user)
-        status = self.request.query_params.get('status', None)
-        if status is not None:
-            queryset = queryset.filter(status=status)
-        return queryset
+        """获取用户的订单列表"""
+        return Order.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -27,21 +24,22 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
+        """创建订单"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Get cart items
-        cart_items = CartItem.objects.filter(user=request.user)
+        # 获取购物车商品
+        cart_items = CartItem.objects.filter(cart__user=request.user)
         if not cart_items.exists():
             return Response(
                 {'detail': '购物车为空'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Calculate total amount
+        # 计算总金额
         total_amount = sum(item.product.price * item.quantity for item in cart_items)
         
-        # Create order
+        # 创建订单
         order = Order.objects.create(
             user=request.user,
             order_no=f'ORDER{timezone.now().strftime("%Y%m%d%H%M%S")}{request.user.id}',
@@ -49,7 +47,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             **serializer.validated_data
         )
 
-        # Create order items and update product stock
+        # 创建订单商品并更新库存
         for cart_item in cart_items:
             product = cart_item.product
             if product.stock < cart_item.quantity:
@@ -69,12 +67,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                 total_price=product.price * cart_item.quantity
             )
 
-            # Update product stock
+            # 更新商品库存
             product.stock -= cart_item.quantity
             product.sales += cart_item.quantity
             product.save()
 
-        # Clear cart
+        # 清空购物车
         cart_items.delete()
 
         return Response(
@@ -84,62 +82,76 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def pay(self, request, pk=None):
+        """支付订单"""
         order = self.get_object()
-        if order.status != Order.STATUS_CHOICES[0][0]:  # 待付款
+        if order.status != 0:  # 待付款
             return Response(
                 {'detail': '订单状态不正确'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        # Mock payment process
-        order.status = Order.STATUS_CHOICES[1][0]  # 待发货
-        order.payment_time = timezone.now()
-        order.payment_method = request.data.get('payment_method', '支付宝')  # 支付方式
-        order.payment_no = f'PAY{timezone.now().strftime("%Y%m%d%H%M%S")}{order.id}'  # 支付流水号
+        
+        # 这里应该调用支付宝支付接口
+        # 为了演示，我们直接更新订单状态
+        order.status = 1  # 待发货
         order.save()
+        return Response({'detail': '支付成功'})
 
-        return Response({
-            'detail': '支付成功',
-            'payment_no': order.payment_no,
-            'payment_time': order.payment_time
-        })
+    @action(detail=True, methods=['post'])
+    def ship(self, request, pk=None):
+        """发货"""
+        order = self.get_object()
+        if order.status != 1:  # 待发货
+            return Response(
+                {'detail': '订单状态不正确'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        shipping_no = request.data.get('shipping_no')
+        if not shipping_no:
+            return Response(
+                {'detail': '请提供物流单号'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.shipping_no = shipping_no
+        order.status = 2  # 待收货
+        order.save()
+        return Response({'detail': '发货成功'})
 
     @action(detail=True, methods=['post'])
     def confirm_receive(self, request, pk=None):
+        """确认收货"""
         order = self.get_object()
-        if order.status != Order.STATUS_CHOICES[2][0]:  # 待收货
+        if order.status != 2:  # 待收货
             return Response(
                 {'detail': '订单状态不正确'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        order.status = Order.STATUS_CHOICES[3][0]  # 已完成
-        order.complete_time = timezone.now()
+        
+        order.status = 3  # 已完成
         order.save()
-
         return Response({'detail': '确认收货成功'})
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
+        """取消订单"""
         order = self.get_object()
-        if order.status != Order.STATUS_CHOICES[0][0]:  # 待付款
+        if order.status != 0:  # 待付款
             return Response(
                 {'detail': '订单状态不正确'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        order.status = Order.STATUS_CHOICES[4][0]  # 已取消
+        
+        order.status = 4  # 已取消
         order.save()
-
         return Response({'detail': '取消订单成功'})
 
     @action(detail=True, methods=['get'])
     def shipping_info(self, request, pk=None):
+        """获取物流信息"""
         order = self.get_object()
         return Response({
             'shipping_no': order.shipping_no,
-            'shipping_company': order.shipping_company,
-            'shipping_time': order.shipping_time,
             'shipping_address': {
                 'name': order.shipping_name,
                 'phone': order.shipping_phone,

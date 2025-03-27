@@ -27,6 +27,10 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, email, password, **extra_fields)
 
 class User(AbstractUser):
+    # 移除 first_name 和 last_name
+    first_name = None
+    last_name = None
+    
     email = models.EmailField(unique=True)
     phone = models.CharField(
         max_length=15,
@@ -39,7 +43,6 @@ class User(AbstractUser):
             )
         ]
     )
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

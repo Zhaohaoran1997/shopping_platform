@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductImage, ProductSpecification, ProductReview
+from .models import Category, Product, ProductImage, ProductSpecification
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -13,7 +13,7 @@ class ProductImageInline(admin.TabularInline):
     """商品图片内联"""
     model = ProductImage
     extra = 1
-    fields = ['image', 'is_main', 'order']
+    fields = ['image', 'is_main']
 
 class ProductSpecificationInline(admin.TabularInline):
     """商品规格内联"""
@@ -23,18 +23,18 @@ class ProductSpecificationInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """商品管理"""
-    list_display = ['name', 'category', 'price', 'stock', 'sales', 'rating', 'is_active', 'created_at']
-    list_filter = ['is_active', 'category', 'rating']
+    list_display = ['name', 'category', 'price', 'stock', 'sales', 'is_active', 'created_at']
+    list_filter = ['is_active', 'category']
     search_fields = ['name', 'description']
     ordering = ['-created_at']
     inlines = [ProductImageInline, ProductSpecificationInline]
-    readonly_fields = ['sales', 'rating', 'review_count']
+    readonly_fields = ['sales']
     fieldsets = (
         ('基本信息', {
             'fields': ('name', 'category', 'description', 'price', 'stock', 'is_active')
         }),
         ('统计信息', {
-            'fields': ('sales', 'rating', 'review_count'),
+            'fields': ('sales',),
             'classes': ('collapse',)
         }),
         ('时间信息', {
@@ -42,12 +42,3 @@ class ProductAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-@admin.register(ProductReview)
-class ProductReviewAdmin(admin.ModelAdmin):
-    """商品评价管理"""
-    list_display = ['product', 'user', 'rating', 'is_anonymous', 'created_at']
-    list_filter = ['rating', 'is_anonymous', 'created_at']
-    search_fields = ['product__name', 'user__username', 'content']
-    ordering = ['-created_at']
-    readonly_fields = ['created_at']

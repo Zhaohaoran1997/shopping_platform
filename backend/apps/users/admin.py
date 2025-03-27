@@ -13,7 +13,7 @@ class CustomUserAdmin(UserAdmin):
 
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        (_('个人信息'), {'fields': ('email', 'phone', 'avatar')}),
+        (_('个人信息'), {'fields': ('email', 'phone')}),
         (_('权限'), {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
             'classes': ('collapse',)

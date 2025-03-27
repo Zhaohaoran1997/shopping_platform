@@ -1,15 +1,15 @@
 from django.shortcuts import render
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
 from django.conf import settings
 from django.db import models
-from .models import Category, Product, ProductImage, ProductSpecification, ProductReview
+from .models import Category, Product, ProductImage, ProductSpecification
 from .serializers import (
     CategorySerializer, ProductSerializer, ProductImageSerializer,
-    ProductSpecificationSerializer, ProductReviewSerializer
+    ProductSpecificationSerializer
 )
 
 # Create your views here.
@@ -34,9 +34,9 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'price', 'rating']
+    filterset_fields = ['category', 'price']
     search_fields = ['name', 'description']
-    ordering_fields = ['price', 'sales', 'rating', 'created_at']
+    ordering_fields = ['price', 'sales', 'created_at']
     ordering = ['-created_at']
 
     def get_queryset(self):
@@ -92,18 +92,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         return obj
 
     @action(detail=True, methods=['get'])
-    def reviews(self, request, pk=None):
-        """获取商品评价列表（带分页）"""
-        product = self.get_object()
-        reviews = product.reviews.all()
-        page = self.paginate_queryset(reviews)
-        if page is not None:
-            serializer = ProductReviewSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = ProductReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['get'])
     def specifications(self, request, pk=None):
         """获取商品规格列表（带缓存）"""
         product = self.get_object()
@@ -115,34 +103,3 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             cached_data = serializer.data
             cache.set(cache_key, cached_data, timeout=3600)  # 缓存1小时
         return Response(cached_data)
-
-class ProductReviewViewSet(viewsets.ModelViewSet):
-    """商品评价视图集"""
-    queryset = ProductReview.objects.all()
-    serializer_class = ProductReviewSerializer
-
-    def get_queryset(self):
-        """获取评价列表"""
-        queryset = super().get_queryset()
-        product_id = self.request.query_params.get('product_id')
-        if product_id:
-            queryset = queryset.filter(product_id=product_id)
-        return queryset
-
-    def perform_create(self, serializer):
-        """创建评价"""
-        product_id = self.request.data.get('product_id')
-        if not product_id:
-            raise serializers.ValidationError('商品ID不能为空')
-        
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            raise serializers.ValidationError('商品不存在')
-        
-        # 创建评价
-        serializer.save(product=product)
-        
-        # 清除相关缓存
-        cache.delete(f'product_detail_{product_id}')
-        cache.delete(f'product_list_{self.request.query_params}')

@@ -14,14 +14,11 @@ class Order(models.Model):
 
     PAYMENT_METHOD_CHOICES = (
         ('alipay', '支付宝'),
-        ('wechat', '微信支付'),
-        ('bank', '银行卡'),
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='用户')
     order_no = models.CharField(max_length=50, unique=True, verbose_name='订单编号')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='订单总金额')
-    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='优惠金额')
     status = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name='订单状态')
     shipping_address = models.ForeignKey(UserAddress, on_delete=models.PROTECT, verbose_name='收货地址')
     shipping_name = models.CharField(max_length=50, verbose_name='收货人姓名')
@@ -31,23 +28,17 @@ class Order(models.Model):
     shipping_district = models.CharField(max_length=50, verbose_name='区县')
     shipping_address_detail = models.TextField(verbose_name='详细地址')
     shipping_no = models.CharField(max_length=50, blank=True, null=True, verbose_name='物流单号')
-    shipping_company = models.CharField(max_length=50, blank=True, null=True, verbose_name='物流公司')
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True, verbose_name='支付方式')
-    payment_no = models.CharField(max_length=50, blank=True, null=True, verbose_name='支付流水号')
-    payment_time = models.DateTimeField(null=True, blank=True, verbose_name='支付时间')
-    shipping_time = models.DateTimeField(null=True, blank=True, verbose_name='发货时间')
-    complete_time = models.DateTimeField(null=True, blank=True, verbose_name='完成时间')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='alipay', verbose_name='支付方式')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     class Meta:
-        db_table = 'orders'
         verbose_name = '订单'
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
 
     def __str__(self):
-        return self.order_no
+        return f'{self.order_no} - {self.get_status_display()}'
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='订单')
