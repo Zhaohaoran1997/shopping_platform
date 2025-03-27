@@ -202,3 +202,19 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Cache settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+
+# Cache timeout settings
+CACHE_TTL = {
+    'PRODUCT_LIST': 300,  # 5 minutes
+    'PRODUCT_DETAIL': 3600,  # 1 hour
+    'CATEGORY_LIST': 3600,  # 1 hour
+    'PRODUCT_SPECIFICATIONS': 3600,  # 1 hour
+}
