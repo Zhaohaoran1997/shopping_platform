@@ -13,17 +13,13 @@
       <el-table :data="addresses" style="width: 100%">
         <el-table-column prop="receiver" label="收货人" width="120" />
         <el-table-column prop="phone" label="联系电话" width="120" />
-        <el-table-column label="收货地址">
+        <el-table-column label="收货地址" min-width="300">
           <template #default="{ row }">
             {{ row.province }}{{ row.city }}{{ row.district }}{{ row.address }}
+            <el-tag v-if="row.is_default" type="success" size="small" class="default-badge">默认地址</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="is_default" label="默认地址" width="100">
-          <template #default="{ row }">
-            <el-tag v-if="row.is_default" type="success">默认</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">
               编辑
