@@ -187,7 +187,24 @@ const handleCheckout = () => {
     ElMessage.warning('请选择要结算的商品')
     return
   }
-  router.push('/order/create')
+  
+  // 将选中的商品数据转换为订单所需格式
+  const orderItems = selectedItems.value.map(item => ({
+    id: item.product.id,
+    name: item.product.name,
+    image_url: item.product.image_url,
+    specification: item.product.specification,
+    price: parseFloat(item.product.price),
+    quantity: item.quantity
+  }))
+  
+  // 跳转到订单创建页面，并传递商品数据
+  router.push({
+    path: '/order/create',
+    query: {
+      items: JSON.stringify(orderItems)
+    }
+  })
 }
 
 // 表格选择变化

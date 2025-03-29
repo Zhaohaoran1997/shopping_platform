@@ -13,14 +13,14 @@
         <el-descriptions-item label="下单时间">{{ formatDate(order.created_at) }}</el-descriptions-item>
         <el-descriptions-item label="订单状态">
           <el-tag :type="getStatusType(order.status)">
-            {{ getStatusText(order.status) }}
+            {{ order.status_display }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="支付方式">{{ order.payment_method }}</el-descriptions-item>
-        <el-descriptions-item label="收货人">{{ order.receiver }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话">{{ order.phone }}</el-descriptions-item>
+        <el-descriptions-item label="支付方式">{{ order.payment_method_display }}</el-descriptions-item>
+        <el-descriptions-item label="收货人">{{ order.shipping_name }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ order.shipping_phone }}</el-descriptions-item>
         <el-descriptions-item label="收货地址" :span="2">
-          {{ order.province }}{{ order.city }}{{ order.district }}{{ order.address }}
+          {{ order.shipping_province }}{{ order.shipping_city }}{{ order.shipping_district }}{{ order.shipping_address_detail }}
         </el-descriptions-item>
       </el-descriptions>
 
@@ -30,24 +30,30 @@
           <el-table-column label="商品图片" width="120">
             <template #default="scope">
               <el-image 
-                :src="scope.row.image_url" 
-                :preview-src-list="[scope.row.image_url]"
+                :src="scope.row.product_image" 
+                :preview-src-list="[scope.row.product_image]"
                 fit="cover"
                 style="width: 80px; height: 80px"
               />
             </template>
           </el-table-column>
-          <el-table-column prop="name" label="商品名称" />
-          <el-table-column prop="specification" label="规格" width="120" />
+          <el-table-column prop="product_name" label="商品名称" />
+          <el-table-column label="规格" width="200">
+            <template #default="scope">
+              <div v-for="spec in scope.row.product.specifications" :key="spec.id">
+                {{ spec.name }}：{{ spec.value }}
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="price" label="单价" width="120">
             <template #default="scope">
-              ¥{{ scope.row.price.toFixed(2) }}
+              ¥{{ scope.row.price }}
             </template>
           </el-table-column>
           <el-table-column prop="quantity" label="数量" width="120" />
-          <el-table-column label="小计" width="120">
+          <el-table-column prop="total_price" label="小计" width="120">
             <template #default="scope">
-              ¥{{ (scope.row.price * scope.row.quantity).toFixed(2) }}
+              ¥{{ scope.row.total_price }}
             </template>
           </el-table-column>
         </el-table>
@@ -56,23 +62,23 @@
       <div class="order-summary">
         <div class="summary-item">
           <span>商品总额：</span>
-          <span>¥{{ order.total_amount.toFixed(2) }}</span>
+          <span>¥{{ order.total_amount }}</span>
         </div>
         <div class="summary-item">
           <span>运费：</span>
-          <span>¥{{ order.shipping_fee.toFixed(2) }}</span>
+          <span>¥{{ order.shipping_fee }}</span>
         </div>
         <div class="summary-item">
           <span>优惠金额：</span>
-          <span>-¥{{ order.discount_amount.toFixed(2) }}</span>
+          <span>-¥{{ order.discount_amount }}</span>
         </div>
         <div class="summary-item total">
           <span>实付金额：</span>
-          <span class="price">¥{{ order.final_amount.toFixed(2) }}</span>
+          <span class="price">¥{{ order.final_amount }}</span>
         </div>
       </div>
 
-      <div class="order-actions" v-if="order.status === 'pending_payment'">
+      <div class="order-actions" v-if="order.status === 0">
         <el-button type="primary" @click="handlePay">立即支付</el-button>
         <el-button type="danger" @click="handleCancel">取消订单</el-button>
       </div>
@@ -92,49 +98,66 @@ const route = useRoute()
 const order = ref({
   order_no: '',
   created_at: '',
-  status: '',
+  status: 0,
+  status_display: '',
   payment_method: '',
-  receiver: '',
-  phone: '',
-  province: '',
-  city: '',
-  district: '',
-  address: '',
+  payment_method_display: '',
+  shipping_name: '',
+  shipping_phone: '',
+  shipping_province: '',
+  shipping_city: '',
+  shipping_district: '',
+  shipping_address_detail: '',
   items: [],
-  total_amount: 0,
-  shipping_fee: 0,
-  discount_amount: 0,
-  final_amount: 0
+  total_amount: '0.00',
+  shipping_fee: '0.00',
+  discount_amount: '0.00',
+  final_amount: '0.00'
 })
 
 const getStatusType = (status) => {
   const statusMap = {
-    pending_payment: 'warning',
-    paid: 'success',
-    shipped: 'info',
-    completed: 'success',
-    cancelled: 'danger'
+    0: 'warning',   // 待付款
+    1: 'primary',   // 待发货
+    2: 'success',   // 待收货
+    3: 'info',      // 已完成
+    4: 'danger'     // 已取消
   }
   return statusMap[status] || 'info'
 }
 
-const getStatusText = (status) => {
-  const statusMap = {
-    pending_payment: '待支付',
-    paid: '已支付',
-    shipped: '已发货',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return statusMap[status] || '未知状态'
-}
-
 const fetchOrderDetail = async () => {
   try {
+    console.log('Fetching order detail for ID:', route.params.id)
     const response = await getOrderDetail(route.params.id)
-    order.value = response.data
+    console.log('Raw API Response:', response)
+
+    // 检查响应数据
+    if (!response) {
+      throw new Error('API 响应为空')
+    }
+
+    console.log('Order data before processing:', response)
+
+    order.value = {
+      ...response,
+      items: response.items?.map(item => ({
+        ...item,
+        product: {
+          ...item.product,
+          specifications: item.product?.specifications || []
+        }
+      })) || []
+    }
+    console.log('Final processed order data:', order.value)
   } catch (error) {
-    ElMessage.error('获取订单详情失败')
+    console.error('获取订单详情失败:', error)
+    console.error('错误详情:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response
+    })
+    ElMessage.error(error.message || '获取订单详情失败')
   }
 }
 

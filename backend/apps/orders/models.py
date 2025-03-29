@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from apps.products.models import Product
 from apps.users.models import UserAddress
+from apps.coupons.models import Coupon, UserCoupon
 
 class Order(models.Model):
     STATUS_CHOICES = (
@@ -14,6 +15,7 @@ class Order(models.Model):
 
     PAYMENT_METHOD_CHOICES = (
         ('alipay', '支付宝'),
+        ('wechat', '微信'),
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='用户')
@@ -29,6 +31,12 @@ class Order(models.Model):
     shipping_address_detail = models.TextField(verbose_name='详细地址')
     shipping_no = models.CharField(max_length=50, blank=True, null=True, verbose_name='物流单号')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='alipay', verbose_name='支付方式')
+    coupon = models.ForeignKey(Coupon, on_delete=models.PROTECT, null=True, blank=True, verbose_name='使用的优惠券')
+    user_coupon = models.ForeignKey(UserCoupon, on_delete=models.PROTECT, null=True, blank=True, verbose_name='用户优惠券')
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='优惠金额')
+    shipping_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='运费')
+    final_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='实付金额')
+    remark = models.TextField(blank=True, null=True, verbose_name='订单备注')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 

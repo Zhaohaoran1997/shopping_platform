@@ -155,13 +155,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createOrder } from '@/api/order'
 import { getAddressList, createAddress } from '@/api/address'
 import { getAvailableCoupons } from '@/api/coupon'
+import { getCartList } from '@/api/cart'
 
 const router = useRouter()
+const route = useRoute()
 const submitting = ref(false)
 const showAddressDialog = ref(false)
 
@@ -243,15 +245,31 @@ const initData = async () => {
   try {
     // 获取地址列表
     const addressResponse = await getAddressList()
-    addresses.value = addressResponse.data
+    addresses.value = addressResponse.results
 
     // 获取可用优惠券
     const couponResponse = await getAvailableCoupons()
-    availableCoupons.value = couponResponse.data
+    availableCoupons.value = couponResponse.results.map(item => ({
+      id: item.id,
+      name: item.coupon.name,
+      type: item.coupon.type,
+      type_display: item.coupon.type_display,
+      amount: parseFloat(item.coupon.amount),
+      min_amount: parseFloat(item.coupon.min_amount),
+      start_time: item.coupon.start_time,
+      end_time: item.coupon.end_time,
+      status: item.coupon.status,
+      status_display: item.coupon.status_display
+    }))
 
-    // 从购物车获取商品信息
-    // TODO: 从购物车store或API获取商品信息
-    orderForm.value.items = mockItems // 临时使用mock数据，后续需要替换
+    // 从路由参数获取商品信息
+    const items = route.query.items
+    if (!items) {
+      ElMessage.error('未选择商品')
+      router.push('/cart')
+      return
+    }
+    orderForm.value.items = JSON.parse(items)
     calculateAmount()
   } catch (error) {
     ElMessage.error('获取数据失败')
@@ -285,7 +303,7 @@ const handleAddAddress = async () => {
     showAddressDialog.value = false
     // 刷新地址列表
     const response = await getAddressList()
-    addresses.value = response.data
+    addresses.value = response.results
   } catch (error) {
     ElMessage.error('地址添加失败')
   }
