@@ -68,6 +68,15 @@ const routes = [
           title: '订单支付',
           requiresAuth: true
         }
+      },
+      {
+        path: '/address',
+        name: 'AddressList',
+        component: () => import('@/views/address/AddressList.vue'),
+        meta: {
+          title: '收货地址',
+          requiresAuth: true
+        }
       }
     ]
   },

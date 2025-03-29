@@ -95,7 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (!checkTokenExpiration()) {
         throw new Error('登录已过期')
       }
-      const response = await axios.put('/users/profile/', profileData)
+      const response = await axios.put('/users/update_profile/', profileData)
       user.value = response.data
       localStorage.setItem('user', JSON.stringify(user.value))
       return response.data

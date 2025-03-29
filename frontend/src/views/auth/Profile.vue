@@ -170,8 +170,9 @@ const handleChangePassword = async () => {
     loading.value = true
     
     await authStore.changePassword({
-      current_password: passwordForm.currentPassword,
-      new_password: passwordForm.newPassword
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+      confirmPassword: passwordForm.confirmPassword
     })
     
     ElMessage.success('密码修改成功')
