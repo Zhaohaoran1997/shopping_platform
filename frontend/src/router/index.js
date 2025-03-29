@@ -15,13 +15,13 @@ const routes = [
       {
         path: '/products',
         name: 'Products',
-        component: () => import('@/views/Products.vue'),
+        component: () => import('@/views/products/ProductList.vue'),
         meta: { title: '商品列表' }
       },
       {
         path: '/products/:id',
         name: 'ProductDetail',
-        component: () => import('@/views/ProductDetail.vue'),
+        component: () => import('@/views/products/ProductDetail.vue'),
         meta: { title: '商品详情' }
       },
       {
