@@ -179,6 +179,43 @@ const fetchCategories = async () => {
   }
 }
 
+// 监听路由参数变化
+watch(
+  () => route.query,
+  (newQuery) => {
+    // 更新搜索参数
+    filterForm.search = newQuery.q || ''
+    // 更新页码
+    if (newQuery.page) {
+      currentPage.value = parseInt(newQuery.page)
+    }
+    // 重新获取商品列表
+    fetchProducts()
+  },
+  { immediate: true }
+)
+
+// 监听筛选表单变化
+watch(
+  () => filterForm,
+  () => {
+    // 更新路由参数
+    const query = { ...route.query }
+    if (filterForm.search) {
+      query.q = filterForm.search
+    } else {
+      delete query.q
+    }
+    if (currentPage.value > 1) {
+      query.page = currentPage.value.toString()
+    } else {
+      delete query.page
+    }
+    router.push({ query })
+  },
+  { deep: true }
+)
+
 // 处理筛选
 const handleFilter = debounce(() => {
   currentPage.value = 1 // 重置页码
@@ -210,27 +247,6 @@ const handleCurrentChange = (val) => {
 const goToDetail = (productId) => {
   router.push(`/products/${productId}`)
 }
-
-// 监听路由参数变化
-watch(() => route.query.q, (newQuery) => {
-  if (newQuery) {
-    filterForm.search = newQuery
-    handleFilter()
-  }
-})
-
-// 监听筛选条件变化
-watch(
-  () => ({
-    minPrice: filterForm.minPrice,
-    maxPrice: filterForm.maxPrice,
-    sortBy: filterForm.sortBy
-  }),
-  () => {
-    handleFilter()
-  },
-  { deep: true }
-)
 
 onMounted(() => {
   fetchCategories()

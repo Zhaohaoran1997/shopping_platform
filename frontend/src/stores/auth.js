@@ -1,11 +1,41 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from '@/utils/axios'
+import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
   const isAuthenticated = ref(!!token.value)
+
+  // 检查token是否过期
+  const checkTokenExpiration = () => {
+    if (!token.value) return false
+    
+    try {
+      // 解析JWT token
+      const payload = JSON.parse(atob(token.value.split('.')[1]))
+      const expirationTime = payload.exp * 1000 // 转换为毫秒
+      const currentTime = Date.now()
+      
+      // 如果token已过期
+      if (currentTime >= expirationTime) {
+        clearAuth()
+        ElMessage.error('登录已过期，请重新登录')
+        router.push({
+          path: '/login',
+          query: { redirect: router.currentRoute.value.fullPath }
+        })
+        return false
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Token validation error:', error)
+      return false
+    }
+  }
 
   const setAuth = (newToken, userData) => {
     token.value = newToken
@@ -62,6 +92,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const updateProfile = async (profileData) => {
     try {
+      if (!checkTokenExpiration()) {
+        throw new Error('登录已过期')
+      }
       const response = await axios.put('/users/profile/', profileData)
       user.value = response.data
       localStorage.setItem('user', JSON.stringify(user.value))
@@ -73,6 +106,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const changePassword = async (passwordData) => {
     try {
+      if (!checkTokenExpiration()) {
+        throw new Error('登录已过期')
+      }
       const changePasswordData = {
         old_password: passwordData.currentPassword,
         new_password: passwordData.newPassword,
@@ -84,6 +120,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 初始化时检查token
+  if (token.value) {
+    checkTokenExpiration()
+  }
+
   return {
     token,
     user,
@@ -92,6 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     updateProfile,
-    changePassword
+    changePassword,
+    checkTokenExpiration
   }
 }) 

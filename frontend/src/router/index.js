@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import Home from '../views/Home.vue'
 
 const routes = [
   {
@@ -9,7 +10,7 @@ const routes = [
       {
         path: '',
         name: 'Home',
-        component: () => import('@/views/Home.vue'),
+        component: Home,
         meta: { title: '首页' }
       },
       {
@@ -30,6 +31,42 @@ const routes = [
         component: () => import('@/views/cart/CartList.vue'),
         meta: {
           title: '购物车',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/order/list',
+        name: 'OrderList',
+        component: () => import('@/views/order/OrderList.vue'),
+        meta: {
+          title: '我的订单',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/order/detail/:id',
+        name: 'OrderDetail',
+        component: () => import('@/views/order/OrderDetail.vue'),
+        meta: {
+          title: '订单详情',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/order/create',
+        name: 'OrderCreate',
+        component: () => import('@/views/order/OrderCreate.vue'),
+        meta: {
+          title: '确认订单',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/order/payment/:id',
+        name: 'OrderPayment',
+        component: () => import('@/views/order/OrderPayment.vue'),
+        meta: {
+          title: '订单支付',
           requiresAuth: true
         }
       }
@@ -56,7 +93,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 

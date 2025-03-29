@@ -6,6 +6,7 @@
       class="search-input"
       clearable
       @keyup.enter="handleSearch"
+      @clear="handleClear"
     >
       <template #prefix>
         <el-icon><search /></el-icon>
@@ -25,13 +26,41 @@ const searchQuery = ref('')
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
+    // 如果当前不在商品列表页面，先跳转到商品列表页面
+    if (route.path !== '/products') {
+      router.push({
+        path: '/products',
+        query: { 
+          q: searchQuery.value.trim(),
+          page: 1  // 重置页码
+        }
+      })
+    } else {
+      // 如果已经在商品列表页面，只更新查询参数
+      router.push({
+        query: { 
+          ...route.query,
+          q: searchQuery.value.trim(),
+          page: 1  // 重置页码
+        }
+      })
+    }
+  }
+}
+
+const handleClear = () => {
+  searchQuery.value = ''
+  // 如果当前不在商品列表页面，先跳转到商品列表页面
+  if (route.path !== '/products') {
     router.push({
       path: '/products',
-      query: { 
-        q: searchQuery.value.trim(),
-        page: 1  // 重置页码
-      }
+      query: { page: 1 }  // 重置页码
     })
+  } else {
+    // 如果已经在商品列表页面，只更新查询参数
+    const query = { ...route.query }
+    delete query.q
+    router.push({ query })
   }
 }
 
@@ -39,8 +68,10 @@ const handleSearch = () => {
 watch(() => route.query.q, (newQuery) => {
   if (newQuery) {
     searchQuery.value = newQuery
+  } else {
+    searchQuery.value = ''
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>

@@ -16,6 +16,7 @@
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item index="/products">商品列表</el-menu-item>
           <el-menu-item index="/cart">购物车</el-menu-item>
+          <el-menu-item v-if="authStore.isAuthenticated" index="/order/list">我的订单</el-menu-item>
         </el-menu>
         <div class="user-info">
           <template v-if="authStore.isAuthenticated">
@@ -29,6 +30,7 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click="$router.push('/profile')">个人信息</el-dropdown-item>
+                  <el-dropdown-item @click="$router.push('/order/list')">我的订单</el-dropdown-item>
                   <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
               </template>

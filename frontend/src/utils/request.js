@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 const request = axios.create({
   baseURL: 'http://localhost:8000',
@@ -31,12 +32,34 @@ request.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           const authStore = useAuthStore()
+          // 清除认证信息
           authStore.clearAuth()
-          window.location.href = '/login'
+          // 显示提示信息
+          ElMessage.error('登录已过期，请重新登录')
+          // 保存当前路由
+          const currentRoute = router.currentRoute.value
+          // 跳转到登录页面，并记录来源页面
+          router.push({
+            path: '/login',
+            query: { redirect: currentRoute.fullPath }
+          })
+          break
+        case 403:
+          ElMessage.error('没有权限访问')
+          break
+        case 404:
+          ElMessage.error('请求的资源不存在')
+          break
+        case 500:
+          ElMessage.error('服务器错误')
           break
         default:
           ElMessage.error(error.response.data.message || '请求失败')
       }
+    } else if (error.request) {
+      ElMessage.error('网络错误，请检查网络连接')
+    } else {
+      ElMessage.error('请求配置错误')
     }
     return Promise.reject(error)
   }
