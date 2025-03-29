@@ -8,18 +8,18 @@
       </template>
       
       <el-table :data="orders" style="width: 100%">
-        <el-table-column prop="order_no" label="订单编号" width="180" />
-        <el-table-column prop="created_at" label="下单时间" width="180">
+        <el-table-column prop="order_no" label="订单编号" />
+        <el-table-column prop="created_at" label="下单时间">
           <template #default="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column prop="total_amount" label="订单金额" width="120">
+        <el-table-column prop="total_amount" label="订单金额">
           <template #default="scope">
             ¥{{ scope.row.total_amount }}
           </template>
         </el-table-column>
-        <el-table-column prop="status_display" label="订单状态" width="120">
+        <el-table-column prop="status_display" label="订单状态">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)">
               {{ scope.row.status_display }}
@@ -149,18 +149,63 @@ onMounted(() => {
 
 <style scoped>
 .order-list {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 20px;
 }
 
-.card-header {
+.order-list .el-card {
+  margin-bottom: 20px;
+}
+
+.order-list .el-card__header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #ebeef5;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.pagination-container {
+.order-list .el-card__body {
+  padding: 20px;
+}
+
+.order-list .el-table {
+  width: 100%;
   margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+}
+
+.order-list .el-table__inner-wrapper {
+  width: 100%;
+}
+
+.order-list .el-table__body-wrapper {
+  width: 100%;
+}
+
+.order-list .el-table__header-wrapper {
+  width: 100%;
+}
+
+.order-list .el-table th {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 500;
+  text-align: left;
+  padding: 12px 0;
+}
+
+.order-list .el-table td {
+  padding: 12px 0;
+}
+
+.order-list .el-tag {
+  min-width: 80px;
+  text-align: center;
+}
+
+.order-list .el-pagination {
+  margin-top: 20px;
+  text-align: right;
 }
 </style> 
