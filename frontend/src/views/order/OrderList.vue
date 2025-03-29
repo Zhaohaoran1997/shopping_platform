@@ -29,7 +29,7 @@
         <el-table-column label="操作" width="200">
           <template #default="scope">
             <el-button 
-              v-if="scope.row.status === 1"
+              v-if="scope.row.status === 0"
               type="primary" 
               size="small"
               @click="handlePay(scope.row)"
@@ -37,7 +37,7 @@
               立即支付
             </el-button>
             <el-button 
-              v-if="scope.row.status === 1"
+              v-if="scope.row.status === 0"
               type="danger" 
               size="small"
               @click="handleCancel(scope.row)"

@@ -17,7 +17,7 @@
           <template #extra>
             <div class="payment-amount">
               <span class="label">支付金额：</span>
-              <span class="amount">¥{{ order.amount.toFixed(2) }}</span>
+              <span class="amount">¥{{ order?.final_amount?.toFixed(2) || '0.00' }}</span>
             </div>
             <div class="payment-actions">
               <el-button 
@@ -50,11 +50,11 @@
           <div class="section-title">选择支付方式</div>
           <el-radio-group v-model="paymentMethod">
             <el-radio-button label="alipay">
-              <img src="@/assets/alipay.png" alt="支付宝" class="payment-icon">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cGF0aCBmaWxsPSIjMTY3N0ZGIiBkPSJNMzMuMDY0IDI0LjQ4OGwtNS4yOTYtNS4yOTZjLS43ODQtLjc4NC0yLjA0OC0uNzg0LTIuODMyIDBsLTUuMjk2IDUuMjk2Yy0uNzg0Ljc4NC0uNzg0IDIuMDQ4IDAgMi44MzJsNS4yOTYgNS4yOTZjLjM5Mi4zOTIuOTA0LjU4OCAxLjQxNi41ODhzMS4wMjQtLjE5NiAxLjQxNi0uNTg4bDUuMjk2LTUuMjk2Yy43ODQtLjc4NC43ODQtMi4wNDggMC0yLjgzMnpNMjQgMGMtMTMuMjU1IDAtMjQgMTAuNzQ1LTI0IDI0czEwLjc0NSAyNCAyNCAyNCAyNC0xMC43NDUgMjQtMjRTMzcuMjU1IDAgMjQgMHoiLz48L3N2Zz4=" alt="支付宝" class="payment-icon">
               支付宝
             </el-radio-button>
             <el-radio-button label="wechat">
-              <img src="@/assets/wechat.png" alt="微信支付" class="payment-icon">
+              <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cGF0aCBmaWxsPSIjMDdDMTYwIiBkPSJNMzMuMDY0IDI0LjQ4OGwtNS4yOTYtNS4yOTZjLS43ODQtLjc4NC0yLjA0OC0uNzg0LTIuODMyIDBsLTUuMjk2IDUuMjk2Yy0uNzg0Ljc4NC0uNzg0IDIuMDQ4IDAgMi44MzJsNS4yOTYgNS4yOTZjLjM5Mi4zOTIuOTA0LjU4OCAxLjQxNi41ODhzMS4wMjQtLjE5NiAxLjQxNi0uNTg4bDUuMjk2LTUuMjk2Yy43ODQtLjc4NC43ODQtMi4wNDggMC0yLjgzMnpNMjQgMGMtMTMuMjU1IDAtMjQgMTAuNzQ1LTI0IDI0czEwLjc0NSAyNCAyNCAyNCAyNC0xMC43NDUgMjQtMjRTMzcuMjU1IDAgMjQgMHoiLz48L3N2Zz4=" alt="微信支付" class="payment-icon">
               微信支付
             </el-radio-button>
           </el-radio-group>
@@ -89,7 +89,8 @@ const qrCodeUrl = ref('')
 const order = ref({
   id: '',
   order_no: '',
-  amount: 0
+  final_amount: 0,
+  status: 0
 })
 
 const getPaymentStatusTitle = computed(() => {
@@ -144,14 +145,17 @@ const handlePay = async () => {
       payment_method: paymentMethod.value
     })
     
-    // 显示支付二维码
-    showQRCode.value = true
-    qrCodeUrl.value = response.data.qr_code_url
+    // 支付成功
+    paymentStatus.value = 'success'
+    ElMessage.success('支付成功')
     
-    // 开始轮询支付状态
-    startPaymentStatusCheck()
+    // 3秒后跳转到订单列表
+    setTimeout(() => {
+      router.push('/order/list')
+    }, 3000)
   } catch (error) {
-    ElMessage.error('支付初始化失败')
+    paymentStatus.value = 'failed'
+    ElMessage.error(error.response?.data?.detail || '支付失败')
   } finally {
     paying.value = false
   }

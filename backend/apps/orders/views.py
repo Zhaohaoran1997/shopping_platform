@@ -60,7 +60,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         # 验证购物车中的商品数量是否与订单一致
         for item in order_items:
             try:
-                cart_item = cart_items.get(product_id=item['id'])
+                cart_item = cart_items.filter(product_id=item['id']).first()
+                if not cart_item:
+                    raise ValueError(f'商品ID {item["id"]} 不在购物车中')
+                    
                 if cart_item.quantity != item['quantity']:
                     return Response(
                         {'detail': f'商品 {cart_item.product.name} 数量不匹配'},
@@ -113,7 +116,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
             # 创建订单项并更新库存
             for item in order_items:
-                cart_item = cart_items.get(product_id=item['id'])
+                cart_item = cart_items.filter(product_id=item['id']).first()
+                if not cart_item:
+                    raise ValueError(f'商品ID {item["id"]} 不在购物车中')
+                    
                 product = cart_item.product
                 if product.stock < item['quantity']:
                     raise ValueError(f'商品 {product.name} 库存不足')
