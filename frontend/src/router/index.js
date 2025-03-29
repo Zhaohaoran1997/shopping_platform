@@ -27,8 +27,11 @@ const routes = [
       {
         path: '/cart',
         name: 'Cart',
-        component: () => import('@/views/Cart.vue'),
-        meta: { title: '购物车' }
+        component: () => import('@/views/cart/CartList.vue'),
+        meta: {
+          title: '购物车',
+          requiresAuth: true
+        }
       }
     ]
   },

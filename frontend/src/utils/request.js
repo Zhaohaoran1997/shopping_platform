@@ -1,18 +1,18 @@
 import axios from 'axios'
-import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 
 const request = axios.create({
-  baseURL: '/api/v1',
+  baseURL: 'http://localhost:8000',
   timeout: 5000
 })
 
 // 请求拦截器
 request.interceptors.request.use(
   config => {
-    const userStore = useUserStore()
-    if (userStore.token) {
-      config.headers.Authorization = `Bearer ${userStore.token}`
+    const authStore = useAuthStore()
+    if (authStore.token) {
+      config.headers.Authorization = `Bearer ${authStore.token}`
     }
     return config
   },
@@ -30,8 +30,8 @@ request.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          const userStore = useUserStore()
-          userStore.logout()
+          const authStore = useAuthStore()
+          authStore.clearAuth()
           window.location.href = '/login'
           break
         default:

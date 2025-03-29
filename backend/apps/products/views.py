@@ -39,9 +39,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         queryset = Product.objects.all()
         
         # Filter by category
-        category_id = self.request.query_params.get('category', None)
+        category_id = self.request.query_params.get('category_id', None)
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+
+        # Filter by price range
+        min_price = self.request.query_params.get('min_price', None)
+        if min_price is not None:
+            queryset = queryset.filter(price__gte=min_price)
+            
+        max_price = self.request.query_params.get('max_price', None)
+        if max_price is not None:
+            queryset = queryset.filter(price__lte=max_price)
 
         # Filter by status
         status = self.request.query_params.get('status', None)

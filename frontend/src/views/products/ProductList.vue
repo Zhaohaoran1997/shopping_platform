@@ -2,32 +2,52 @@
   <div class="product-list-container">
     <el-card class="filter-card">
       <el-form :inline="true" :model="filterForm" class="filter-form">
-        <el-form-item label="分类">
+        <el-form-item label="价格区间">
+          <el-input-number
+            v-model="filterForm.minPrice"
+            :min="0"
+            placeholder="最低价"
+            @change="handleFilter"
+            size="small"
+          />
+          <span class="mx-2">-</span>
+          <el-input-number
+            v-model="filterForm.maxPrice"
+            :min="0"
+            placeholder="最高价"
+            @change="handleFilter"
+            size="small"
+          />
+        </el-form-item>
+
+        <el-form-item label="排序">
+          <el-select
+            v-model="filterForm.sortBy"
+            placeholder="选择排序方式"
+            @change="handleFilter"
+            size="small"
+          >
+            <el-option label="默认排序" value="-created_at" />
+            <el-option label="价格从低到高" value="price" />
+            <el-option label="价格从高到低" value="-price" />
+            <el-option label="销量从高到低" value="-sales" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="商品分类">
           <el-select v-model="filterForm.category" placeholder="选择分类" clearable>
             <el-option
-              v-for="item in categories"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
+              v-for="category in categories"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="价格区间">
-          <el-input-number v-model="filterForm.minPrice" :min="0" placeholder="最低价" />
-          <span class="mx-2">-</span>
-          <el-input-number v-model="filterForm.maxPrice" :min="0" placeholder="最高价" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-select v-model="filterForm.sortBy" placeholder="排序方式">
-            <el-option label="价格从低到高" value="price_asc" />
-            <el-option label="价格从高到低" value="price_desc" />
-            <el-option label="销量从高到低" value="sales_desc" />
-            <el-option label="上架时间最新" value="created_desc" />
-          </el-select>
-        </el-form-item>
+
         <el-form-item>
-          <el-button type="primary" @click="handleFilter">筛选</el-button>
-          <el-button @click="resetFilter">重置</el-button>
+          <el-button type="primary" @click="handleFilter" size="small">筛选</el-button>
+          <el-button @click="resetFilter" size="small">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -48,7 +68,8 @@
             @click="goToDetail(product.id)"
           >
             <el-image 
-              :src="product.main_image" 
+              :src="product.images[0]?.image_url" 
+              :preview-src-list="product.images.map(img => img.image_url)"
               fit="cover"
               class="product-image"
             >
@@ -89,18 +110,19 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { PictureFilled } from '@element-plus/icons-vue'
-import axios from '@/utils/axios'
+import request from '@/utils/request'
+import { debounce } from 'lodash-es'
 
 const router = useRouter()
 const route = useRoute()
 
 // 筛选表单
 const filterForm = reactive({
-  category: '',
   minPrice: null,
   maxPrice: null,
-  sortBy: 'created_desc',
-  search: ''
+  sortBy: '-created_at',
+  search: '',
+  category: null
 })
 
 // 分页相关
@@ -118,17 +140,26 @@ const fetchProducts = async () => {
     const params = {
       page: currentPage.value,
       page_size: pageSize.value,
-      category: filterForm.category,
       min_price: filterForm.minPrice,
       max_price: filterForm.maxPrice,
-      sort_by: filterForm.sortBy,
-      search: filterForm.search
+      order_by: filterForm.sortBy,
+      search: filterForm.search,
+      category_id: filterForm.category,
+      is_active: true
     }
     
-    const response = await axios.get('/products/products/', { params })
-    products.value = response.data.results
-    total.value = response.data.count
+    // 移除空值参数
+    Object.keys(params).forEach(key => {
+      if (params[key] === null || params[key] === '') {
+        delete params[key]
+      }
+    })
+    
+    const response = await request.get('/products/products/', { params })
+    products.value = response.results
+    total.value = response.count
   } catch (error) {
+    console.error('获取商品列表失败:', error)
     ElMessage.error('获取商品列表失败')
   }
 }
@@ -136,25 +167,31 @@ const fetchProducts = async () => {
 // 获取分类列表
 const fetchCategories = async () => {
   try {
-    const response = await axios.get('/products/categories/')
-    categories.value = response.data
+    const response = await request.get('/products/categories/')
+    // 从分页响应中获取分类列表
+    categories.value = (response.results || []).filter(category => category.is_active)
   } catch (error) {
-    ElMessage.error('获取分类列表失败')
+    console.error('获取分类列表失败:', error)
+    // 只在真正失败时显示错误消息
+    if (error.response?.status !== 200) {
+      ElMessage.error('获取分类列表失败')
+    }
   }
 }
 
 // 处理筛选
-const handleFilter = () => {
-  currentPage.value = 1
+const handleFilter = debounce(() => {
+  currentPage.value = 1 // 重置页码
   fetchProducts()
-}
+}, 300)
 
 // 重置筛选
 const resetFilter = () => {
-  filterForm.category = ''
   filterForm.minPrice = null
   filterForm.maxPrice = null
-  filterForm.sortBy = 'created_desc'
+  filterForm.sortBy = '-created_at'
+  filterForm.search = ''
+  filterForm.category = null
   handleFilter()
 }
 
@@ -182,6 +219,19 @@ watch(() => route.query.q, (newQuery) => {
   }
 })
 
+// 监听筛选条件变化
+watch(
+  () => ({
+    minPrice: filterForm.minPrice,
+    maxPrice: filterForm.maxPrice,
+    sortBy: filterForm.sortBy
+  }),
+  () => {
+    handleFilter()
+  },
+  { deep: true }
+)
+
 onMounted(() => {
   fetchCategories()
   fetchProducts()
@@ -197,12 +247,15 @@ onMounted(() => {
 
 .filter-card {
   margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .filter-form {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 }
 
 .product-grid {
@@ -212,17 +265,26 @@ onMounted(() => {
 .product-card {
   margin-bottom: 20px;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .product-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
 }
 
 .product-image {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
 }
 
 .image-slot {
@@ -238,6 +300,7 @@ onMounted(() => {
 
 .product-info {
   padding: 14px;
+  background: #fff;
 }
 
 .product-title {
@@ -247,6 +310,11 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.product-card:hover .product-title {
+  color: #409EFF;
 }
 
 .product-price {
@@ -271,9 +339,22 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+  padding: 20px 0;
 }
 
 .mx-2 {
   margin: 0 8px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+:deep(.el-input-number) {
+  width: 120px;
+}
+
+:deep(.el-select) {
+  width: 160px;
 }
 </style> 

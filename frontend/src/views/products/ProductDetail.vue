@@ -150,7 +150,12 @@ const handleAddToCart = async () => {
         value_id: valueId
       }))
 
-    await axios.post('/cart/items/', {
+    // 先获取用户的购物车
+    const cartResponse = await axios.get('/cart/cart/')
+    const cartId = cartResponse.data.id
+
+    // 添加商品到购物车
+    await axios.post(`/cart/cart/${cartId}/add_item/`, {
       product_id: product.value.id,
       quantity: quantity.value,
       specifications
