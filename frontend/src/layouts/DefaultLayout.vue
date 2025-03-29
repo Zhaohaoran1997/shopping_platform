@@ -3,7 +3,7 @@
     <el-header>
       <div class="header-content">
         <div class="logo">
-          购物平台
+          <router-link to="/">购物平台</router-link>
         </div>
         <div class="search-wrapper">
           <ProductSearch />
@@ -14,10 +14,22 @@
           mode="horizontal"
           router
         >
-          <el-menu-item index="/">首页</el-menu-item>
-          <el-menu-item index="/products">商品列表</el-menu-item>
-          <el-menu-item index="/cart">购物车</el-menu-item>
-          <el-menu-item index="/coupons">优惠券</el-menu-item>
+          <el-menu-item index="/products">
+            <el-icon><Goods /></el-icon>
+            商品
+          </el-menu-item>
+          <el-menu-item index="/cart">
+            <el-icon><ShoppingCart /></el-icon>
+            购物车
+          </el-menu-item>
+          <el-menu-item index="/order/list">
+            <el-icon><List /></el-icon>
+            订单
+          </el-menu-item>
+          <el-menu-item index="/returns">
+            <el-icon><Refresh /></el-icon>
+            退换货
+          </el-menu-item>
         </el-menu>
         <div class="flex-grow" />
         <div class="header-right">
@@ -66,7 +78,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ArrowDown, User, Location, List, SwitchButton } from '@element-plus/icons-vue'
+import { ArrowDown, User, Location, List, SwitchButton, Goods, ShoppingCart, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import ProductSearch from '@/components/ProductSearch.vue'
 import { computed } from 'vue'
@@ -125,6 +137,11 @@ const handleLogout = async () => {
   margin-right: 20px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.logo a {
+  color: #409EFF;
+  text-decoration: none;
 }
 
 .search-wrapper {

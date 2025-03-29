@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import ReturnRequest, ReturnImage
 from apps.orders.serializers import OrderSerializer
+from apps.orders.models import Order
+from apps.products.models import Product
 
 class ReturnImageSerializer(serializers.ModelSerializer):
     """退换货图片序列化器"""
@@ -15,12 +17,14 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
     images = ReturnImageSerializer(many=True, read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
 
     class Meta:
         model = ReturnRequest
         fields = [
             'id', 'order', 'type', 'type_display', 'reason', 'status', 'status_display',
-            'images', 'created_at', 'updated_at'
+            'images', 'created_at', 'updated_at', 'order_number', 'product_name'
         ]
         read_only_fields = ['status', 'created_at', 'updated_at']
 
@@ -67,4 +71,42 @@ class ReturnRequestCreateSerializer(serializers.ModelSerializer):
                 image=image_data
             )
         
-        return return_request 
+        return return_request
+
+class ReturnRequestDetailSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_image = serializers.ImageField(source='product.image', read_only=True)
+    product_price = serializers.DecimalField(
+        source='product.price',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True
+    )
+
+    class Meta:
+        model = ReturnRequest
+        fields = [
+            'id', 'order_number', 'product_name', 'product_image',
+            'product_price', 'return_type', 'reason', 'description',
+            'status', 'created_at', 'shipping_company', 'tracking_number'
+        ]
+
+class ShippingInfoSerializer(serializers.Serializer):
+    shipping_company = serializers.ChoiceField(choices=[
+        ('SF', '顺丰速运'),
+        ('ZTO', '中通快递'),
+        ('YTO', '圆通速递'),
+        ('YD', '韵达快递')
+    ])
+    tracking_number = serializers.CharField(max_length=50)
+
+class OrderListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['id', 'order_number', 'created_at']
+
+class ProductListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'image', 'price'] 

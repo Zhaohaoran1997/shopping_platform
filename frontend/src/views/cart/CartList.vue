@@ -187,8 +187,7 @@ const handleCheckout = () => {
     ElMessage.warning('请选择要结算的商品')
     return
   }
-  // TODO: 跳转到结算页面
-  router.push('/checkout')
+  router.push('/order/create')
 }
 
 // 表格选择变化

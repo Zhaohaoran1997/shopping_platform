@@ -172,7 +172,7 @@ const handleBuyNow = async () => {
     // 先添加到购物车
     await handleAddToCart()
     // 跳转到结算页面
-    router.push('/checkout')
+    router.push('/order/create')
   } catch (error) {
     ElMessage.error('操作失败')
   }

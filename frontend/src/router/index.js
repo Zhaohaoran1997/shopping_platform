@@ -89,8 +89,8 @@ const routes = [
       },
       {
         path: '/returns',
-        name: 'ReturnList',
-        component: () => import('@/views/returns/ReturnList.vue'),
+        name: 'ReturnsList',
+        component: () => import('@/views/returns/ReturnsList.vue'),
         meta: {
           title: '我的退换货',
           requiresAuth: true
@@ -99,14 +99,14 @@ const routes = [
       {
         path: '/returns/create',
         name: 'ReturnCreate',
-        component: () => import('@/views/returns/ReturnCreate.vue'),
+        component: () => import('@/views/returns/ReturnForm.vue'),
         meta: {
           title: '申请退换货',
           requiresAuth: true
         }
       },
       {
-        path: '/returns/detail/:id',
+        path: '/returns/:id',
         name: 'ReturnDetail',
         component: () => import('@/views/returns/ReturnDetail.vue'),
         meta: {
