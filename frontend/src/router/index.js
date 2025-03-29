@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes = [
   {
@@ -34,8 +35,20 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
-    meta: { title: '登录' }
+    component: () => import('@/views/auth/Login.vue'),
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/auth/Register.vue'),
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/auth/Profile.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -46,9 +59,19 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 购物平台` : '购物平台'
-  next()
+  const authStore = useAuthStore()
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+  } else if (requiresGuest && authStore.isAuthenticated) {
+    next('/')
+  } else {
+    // 设置页面标题
+    document.title = to.meta.title ? `${to.meta.title} - 购物平台` : '购物平台'
+    next()
+  }
 })
 
 export default router 

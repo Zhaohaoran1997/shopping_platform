@@ -15,10 +15,10 @@
           <el-menu-item index="/cart">购物车</el-menu-item>
         </el-menu>
         <div class="user-info">
-          <template v-if="userStore.token">
+          <template v-if="authStore.isAuthenticated">
             <el-dropdown>
               <span class="el-dropdown-link">
-                {{ userStore.userInfo?.username }}
+                {{ authStore.user?.username }}
                 <el-icon class="el-icon--right">
                   <arrow-down />
                 </el-icon>
@@ -49,15 +49,22 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+import { ArrowDown } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    ElMessage.success('退出登录成功')
+    router.push('/login')
+  } catch (error) {
+    ElMessage.error('退出登录失败')
+  }
 }
 </script>
 
@@ -74,24 +81,28 @@ const handleLogout = () => {
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
-  margin-right: 40px;
+  color: #409EFF;
+}
+
+.el-menu {
+  border-bottom: none;
 }
 
 .user-info {
-  margin-left: 20px;
-}
-
-.el-dropdown-link {
-  cursor: pointer;
   display: flex;
   align-items: center;
 }
 
+.el-dropdown-link {
+  cursor: pointer;
+  color: #409EFF;
+}
+
 .el-footer {
   text-align: center;
-  color: #666;
-  padding: 20px;
+  color: #909399;
+  padding: 20px 0;
 }
 </style> 
