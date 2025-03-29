@@ -14,7 +14,13 @@ class CouponViewSet(viewsets.ModelViewSet):
     """消费券管理"""
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """根据操作设置不同的权限"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -28,7 +34,7 @@ class CouponViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         return queryset
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def claim(self, request, pk=None):
         """领取消费券"""
         coupon = self.get_object()

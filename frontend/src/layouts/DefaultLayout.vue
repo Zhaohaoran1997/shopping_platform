@@ -17,7 +17,7 @@
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item index="/products">商品列表</el-menu-item>
           <el-menu-item index="/cart">购物车</el-menu-item>
-          <el-menu-item index="/order/list">我的订单</el-menu-item>
+          <el-menu-item index="/coupons">优惠券</el-menu-item>
         </el-menu>
         <div class="flex-grow" />
         <div class="header-right">
@@ -29,9 +29,18 @@
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-                  <el-dropdown-item command="address">收货地址</el-dropdown-item>
-                  <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/profile')">
+                    <el-icon><User /></el-icon>个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/address')">
+                    <el-icon><Location /></el-icon>收货地址
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/order/list')">
+                    <el-icon><List /></el-icon>我的订单
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">
+                    <el-icon><SwitchButton /></el-icon>退出登录
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -57,7 +66,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, User, Location, List, SwitchButton } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import ProductSearch from '@/components/ProductSearch.vue'
 import { computed } from 'vue'

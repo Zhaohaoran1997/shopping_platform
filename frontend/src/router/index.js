@@ -77,6 +77,24 @@ const routes = [
           title: '收货地址',
           requiresAuth: true
         }
+      },
+      {
+        path: '/coupons',
+        name: 'CouponList',
+        component: () => import('@/views/coupon/CouponList.vue'),
+        meta: {
+          title: '优惠券',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/coupon-center',
+        name: 'CouponCenter',
+        component: () => import('@/views/coupon/CouponCenter.vue'),
+        meta: {
+          title: '优惠券中心',
+          requiresAuth: true
+        }
       }
     ]
   },
