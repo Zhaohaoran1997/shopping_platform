@@ -88,11 +88,29 @@ const routes = [
         }
       },
       {
-        path: '/coupon-center',
-        name: 'CouponCenter',
-        component: () => import('@/views/coupon/CouponCenter.vue'),
+        path: '/returns',
+        name: 'ReturnList',
+        component: () => import('@/views/returns/ReturnList.vue'),
         meta: {
-          title: '优惠券中心',
+          title: '我的退换货',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/returns/create',
+        name: 'ReturnCreate',
+        component: () => import('@/views/returns/ReturnCreate.vue'),
+        meta: {
+          title: '申请退换货',
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/returns/detail/:id',
+        name: 'ReturnDetail',
+        component: () => import('@/views/returns/ReturnDetail.vue'),
+        meta: {
+          title: '退换货详情',
           requiresAuth: true
         }
       }
