@@ -82,6 +82,9 @@
         <el-button type="primary" @click="handlePay">立即支付</el-button>
         <el-button type="danger" @click="handleCancel">取消订单</el-button>
       </div>
+      <div class="order-actions" v-if="order.status === 2">
+        <el-button type="success" @click="handleConfirmReceive">确认收货</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -91,7 +94,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/date'
-import { getOrderDetail, cancelOrder } from '@/api/order'
+import { getOrderDetail, cancelOrder, confirmReceive } from '@/api/order'
 
 const router = useRouter()
 const route = useRoute()
@@ -178,6 +181,23 @@ const handleCancel = async () => {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('取消订单失败')
+    }
+  }
+}
+
+const handleConfirmReceive = async () => {
+  try {
+    await ElMessageBox.confirm('确认已收到商品？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await confirmReceive(route.params.id)
+    ElMessage.success('确认收货成功')
+    router.push('/order/list')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('确认收货失败')
     }
   }
 }

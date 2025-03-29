@@ -119,6 +119,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -149,15 +150,39 @@ const searchOrders = async (query) => {
   if (query) {
     loading.value = true
     try {
-      const response = await fetch(`/returns/orders/?search=${query}`)
-      if (!response.ok) throw new Error('获取订单列表失败')
-      const data = await response.json()
-      orderOptions.value = data.results
+      console.log('开始搜索订单:', query)
+      const response = await request.get('/returns/orders/', {
+        params: { search: query }
+      })
+      
+      console.log('完整响应:', response)
+      
+      if (!response || !response.results) {
+        console.error('数据格式不正确:', response)
+        throw new Error('返回数据格式不正确')
+      }
+      
+      orderOptions.value = response.results.map(order => ({
+        id: order.id,
+        order_number: order.order_number,
+        created_at: order.created_at,
+        status_display: order.status_display
+      }))
+      
+      console.log('处理后的订单选项:', orderOptions.value)
+      
+      if (orderOptions.value.length === 0) {
+        ElMessage.warning('未找到符合条件的订单')
+      }
     } catch (error) {
-      ElMessage.error(error.message)
+      console.error('搜索订单失败:', error)
+      ElMessage.error(error.response?.data?.detail || error.message || '获取订单列表失败')
+      orderOptions.value = []
     } finally {
       loading.value = false
     }
+  } else {
+    orderOptions.value = []
   }
 }
 
@@ -169,12 +194,21 @@ const handleOrderChange = async (orderId) => {
   }
 
   try {
-    const response = await fetch(`/returns/orders/${orderId}/products/`)
-    if (!response.ok) throw new Error('获取订单详情失败')
-    const data = await response.json()
-    productOptions.value = data
+    const response = await request.get(`/returns/orders/${orderId}/products/`)
+    
+    if (!response) {
+      throw new Error('返回数据为空')
+    }
+    
+    productOptions.value = response || []
+    if (productOptions.value.length === 0) {
+      ElMessage.warning('该订单没有可退换的商品')
+    }
   } catch (error) {
-    ElMessage.error(error.message)
+    console.error('获取订单商品失败:', error)
+    ElMessage.error(error.response?.data?.detail || error.message || '获取订单详情失败')
+    productOptions.value = []
+    form.product_id = ''
   }
 }
 
@@ -207,18 +241,16 @@ const beforeUpload = async (file) => {
     const formData = new FormData()
     formData.append('image', file)
     
-    const response = await fetch('/returns/requests/upload/', {
-      method: 'POST',
-      body: formData
+    const response = await request.post('/returns/requests/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
     
-    if (!response.ok) throw new Error('上传图片失败')
-    
-    const data = await response.json()
-    form.images.push(data.url)
+    form.images.push(response.url)
     return false // 阻止默认上传
   } catch (error) {
-    ElMessage.error(error.message)
+    ElMessage.error(error.response?.data?.detail || error.message || '上传图片失败')
     return false
   }
 }
@@ -229,28 +261,20 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     
-    const response = await fetch('/returns/requests/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        order_id: form.value.order_id,
-        product_id: form.value.product_id,
-        type: form.value.return_type,
-        reason: form.value.reason,
-        description: form.value.description,
-        images: form.value.images
-      })
+    const response = await request.post('/returns/requests/', {
+      order_id: form.order_id,
+      product_id: form.product_id,
+      type: form.return_type === 'refund' ? 1 : 2,  // 1: 退货, 2: 换货
+      reason: form.reason,
+      description: form.description,
+      images: form.images
     })
-    
-    if (!response.ok) throw new Error('提交申请失败')
     
     ElMessage.success('申请提交成功')
     router.push('/returns')
   } catch (error) {
-    ElMessage.error(error.message)
+    console.error('提交退换货申请失败:', error)
+    ElMessage.error(error.response?.data?.detail || error.message || '提交申请失败')
   }
 }
 </script>

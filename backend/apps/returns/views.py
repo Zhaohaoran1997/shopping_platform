@@ -9,10 +9,12 @@ from .serializers import (
     ReturnRequestSerializer,
     ReturnRequestDetailSerializer,
     OrderListSerializer,
-    ShippingInfoSerializer
+    ShippingInfoSerializer,
+    ProductListSerializer
 )
 from apps.orders.models import Order
 from apps.products.models import Product
+from rest_framework.pagination import PageNumberPagination
 
 # Create your views here.
 
@@ -20,6 +22,13 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
     """退换货申请视图集"""
     serializer_class = ReturnRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        """根据不同的操作使用不同的序列化器"""
+        if self.action == 'create':
+            from .serializers import ReturnRequestCreateSerializer
+            return ReturnRequestCreateSerializer
+        return self.serializer_class
 
     def get_queryset(self):
         """获取用户的退换货申请列表"""
@@ -30,6 +39,7 @@ class ReturnRequestViewSet(viewsets.ModelViewSet):
         return queryset.select_related('order')
 
     def perform_create(self, serializer):
+        print("Request data:", self.request.data)  # 添加调试日志
         serializer.save(user=self.request.user)
 
     @action(detail=True, methods=['post'])
@@ -103,19 +113,42 @@ class ReturnRequestImageUploadView(viewsets.ViewSet):
             'status': 'success'
         })
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class OrderListViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderListSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
-        return Order.objects.filter(
+        queryset = Order.objects.filter(
             user=self.request.user,
-            status='completed'  # 只显示已完成的订单
+            status=3  # 只显示已完成的订单
         )
+        
+        # 添加搜索功能
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(order_no__icontains=search)
+        
+        return queryset.order_by('-created_at')
 
     @action(detail=True)
     def products(self, request, pk=None):
+        """获取订单中的商品列表"""
         order = self.get_object()
-        products = Product.objects.filter(order_items__order=order)
-        serializer = OrderListSerializer(products, many=True)
+        # 获取订单中的商品，并排除已经申请过退换货的商品
+        products = Product.objects.filter(
+            orderitem__order=order
+        ).exclude(
+            id__in=ReturnRequest.objects.filter(
+                order=order,
+                status__in=[0, 1]  # 排除待审核和已同意的申请
+            ).values_list('product_id', flat=True)
+        ).distinct()
+        
+        serializer = ProductListSerializer(products, many=True)
         return Response(serializer.data)

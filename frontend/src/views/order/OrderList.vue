@@ -45,6 +45,14 @@
               取消订单
             </el-button>
             <el-button 
+              v-if="scope.row.status === 2"
+              type="success" 
+              size="small"
+              @click="handleConfirmReceive(scope.row)"
+            >
+              确认收货
+            </el-button>
+            <el-button 
               type="info" 
               size="small"
               @click="handleViewDetail(scope.row)"
@@ -75,7 +83,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/date'
-import { getOrderList, cancelOrder } from '@/api/order'
+import { getOrderList, cancelOrder, confirmReceive } from '@/api/order'
 
 const router = useRouter()
 const orders = ref([])
@@ -124,6 +132,23 @@ const handleCancel = async (order) => {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('取消订单失败')
+    }
+  }
+}
+
+const handleConfirmReceive = async (order) => {
+  try {
+    await ElMessageBox.confirm('确认已收到商品？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await confirmReceive(order.id)
+    ElMessage.success('确认收货成功')
+    fetchOrders()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('确认收货失败')
     }
   }
 }

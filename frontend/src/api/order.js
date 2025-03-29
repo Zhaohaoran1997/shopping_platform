@@ -49,4 +49,12 @@ export function getPaymentStatus(id) {
     url: `/orders/orders/${id}/payment_status/`,
     method: 'get'
   })
+}
+
+// 确认收货
+export function confirmReceive(id) {
+  return request({
+    url: `/orders/orders/${id}/confirm_receive/`,
+    method: 'post'
+  })
 } 
