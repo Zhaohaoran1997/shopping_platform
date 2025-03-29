@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import Home from '../views/Home.vue'
 
 const routes = [
   {
@@ -10,7 +9,7 @@ const routes = [
       {
         path: '',
         name: 'Home',
-        component: Home,
+        component: () => import('@/views/products/ProductList.vue'),
         meta: { title: '首页' }
       },
       {
