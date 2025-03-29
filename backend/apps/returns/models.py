@@ -18,15 +18,25 @@ class ReturnRequest(models.Model):
         (4, '已取消'),
     )
 
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='returns', verbose_name='订单')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='returns', verbose_name='用户')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='returns', verbose_name='订单')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name='商品', null=True, blank=True)
     quantity = models.IntegerField(verbose_name='退货数量', default=1)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='退货总价', default=0)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='优惠金额', default=0)
+    actual_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='实际金额', default=0)
     type = models.IntegerField(choices=TYPE_CHOICES, verbose_name='类型')
     reason = models.TextField(verbose_name='原因')
     description = models.TextField(verbose_name='问题描述', blank=True)
     status = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name='状态')
+    exchange_order = models.ForeignKey(
+        Order,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='exchange_returns',
+        verbose_name='换货订单'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 

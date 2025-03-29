@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import ReturnRequest, ReturnImage
 from apps.orders.serializers import OrderSerializer
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderItem
 from apps.products.models import Product
 
 class ReturnImageSerializer(serializers.ModelSerializer):
@@ -20,16 +20,24 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     product_image = serializers.ImageField(source='product.image', read_only=True)
     product_price = serializers.DecimalField(source='product.price', max_digits=10, decimal_places=2, read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    actual_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
 
     class Meta:
         model = ReturnRequest
         fields = [
             'id', 'order_number', 'product_name', 'product_image', 'product_price',
-            'quantity', 'total_price', 'type', 'type_display', 'reason',
-            'description', 'status', 'status_display', 'images',
-            'created_at', 'updated_at'
+            'quantity', 'total_price', 'discount_amount', 'actual_amount',
+            'type', 'type_display', 'reason', 'description', 'status',
+            'status_display', 'images', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['status', 'created_at', 'updated_at', 'total_price']
+        read_only_fields = [
+            'status', 'created_at', 'updated_at', 'total_price',
+            'discount_amount', 'actual_amount'
+        ]
 
 class ReturnRequestCreateSerializer(serializers.ModelSerializer):
     """退换货申请创建序列化器"""
@@ -72,46 +80,56 @@ class ReturnRequestCreateSerializer(serializers.ModelSerializer):
             if ReturnRequest.objects.filter(order=order, product_id=product_id).exists():
                 raise serializers.ValidationError('该商品已经申请过退换货')
             
-            # 计算退货总价
-            data['total_price'] = order_item.price * quantity
+            # 计算退货总价和实际退款金额
+            total_price = order_item.price * quantity
+            
+            # 计算优惠比例
+            if order.total_amount > 0:
+                discount_ratio = order.discount_amount / order.total_amount
+                discount_amount = total_price * discount_ratio
+                actual_amount = total_price - discount_amount
+            else:
+                discount_amount = 0
+                actual_amount = total_price
+            
+            data['total_price'] = total_price
+            data['discount_amount'] = discount_amount
+            data['actual_amount'] = actual_amount
+            data['original_order'] = order  # 保存原订单对象，供创建时使用
             
             return data
         except Order.DoesNotExist:
             raise serializers.ValidationError('订单不存在')
 
     def create(self, validated_data):
-        """创建退换货申请"""
-        print("Validated data:", validated_data)  # 添加调试日志
-        # 从 validated_data 中获取并移除 write_only 字段
-        order_id = validated_data.pop('order_id', None)
-        product_id = validated_data.pop('product_id', None)
-        quantity = validated_data.pop('quantity', 1)
-        total_price = validated_data.pop('total_price', 0)  # 获取计算好的总价
-        images_data = validated_data.pop('images', [])
-        
-        print("Extracted order_id:", order_id)  # 添加调试日志
-        print("Extracted product_id:", product_id)  # 添加调试日志
-        print("Extracted quantity:", quantity)  # 添加调试日志
-        print("Extracted total_price:", total_price)  # 添加调试日志
-        
-        if not order_id or not product_id:
-            raise serializers.ValidationError('订单ID和商品ID不能为空')
-        
-        # 创建退换货申请
-        return_request = ReturnRequest.objects.create(
-            order_id=order_id,
-            product_id=product_id,
-            quantity=quantity,
-            total_price=total_price,  # 添加总价
-            **validated_data  # validated_data 中已经包含了 user
+        # 获取订单商品信息
+        order_item = OrderItem.objects.get(
+            order_id=validated_data['order_id'],
+            product_id=validated_data['product_id']
         )
         
-        # 创建退换货图片
-        for image_data in images_data:
-            ReturnImage.objects.create(
-                return_request=return_request,
-                image=image_data
-            )
+        # 计算退货总价
+        total_price = order_item.price * validated_data.get('quantity', 1)
+        
+        # 创建退货请求
+        return_request = ReturnRequest.objects.create(
+            user=validated_data['user'],
+            order=order_item.order,
+            product=order_item.product,
+            type=validated_data['type'],
+            reason=validated_data['reason'],
+            description=validated_data.get('description', ''),
+            quantity=validated_data.get('quantity', 1),
+            total_price=total_price
+        )
+        
+        # 处理图片
+        if 'images' in validated_data:
+            for image_url in validated_data['images']:
+                ReturnImage.objects.create(
+                    return_request=return_request,
+                    image_url=image_url
+                )
         
         return return_request
 

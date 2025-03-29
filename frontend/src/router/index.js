@@ -89,8 +89,8 @@ const routes = [
       },
       {
         path: '/returns',
-        name: 'ReturnsList',
-        component: () => import('@/views/returns/ReturnsList.vue'),
+        name: 'ReturnList',
+        component: () => import('@/views/returns/ReturnList.vue'),
         meta: {
           title: '我的退换货',
           requiresAuth: true

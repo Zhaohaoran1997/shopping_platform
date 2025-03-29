@@ -156,8 +156,8 @@ const fetchProducts = async () => {
     })
     
     const response = await request.get('/products/products/', { params })
-    products.value = response.results
-    total.value = response.count
+    products.value = response.data.results
+    total.value = response.data.count
   } catch (error) {
     console.error('获取商品列表失败:', error)
     ElMessage.error('获取商品列表失败')

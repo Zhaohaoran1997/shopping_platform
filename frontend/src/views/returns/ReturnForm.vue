@@ -24,14 +24,11 @@
         >
           <el-option
             v-for="order in orderOptions"
-            :key="order.id"
-            :label="order.order_number"
-            :value="order.id"
+            :key="order.value"
+            :label="order.label"
+            :value="order.value"
           >
-            <span>{{ order.order_number }}</span>
-            <span style="float: right; color: #8492a6; font-size: 13px">
-              {{ order.created_at }}
-            </span>
+            <span>{{ order.label }}</span>
           </el-option>
         </el-select>
       </el-form-item>
@@ -44,22 +41,11 @@
         >
           <el-option
             v-for="product in productOptions"
-            :key="product.id"
-            :label="product.name"
-            :value="product.id"
+            :key="product.value"
+            :label="product.label"
+            :value="product.value"
           >
-            <div class="product-option">
-              <el-image
-                :src="product.image"
-                :preview-src-list="[product.image]"
-                fit="cover"
-                class="product-image"
-              />
-              <div class="product-info">
-                <div>{{ product.name }}</div>
-                <div class="product-price">¥{{ product.price }}</div>
-              </div>
-            </div>
+            <span>{{ product.label }}</span>
           </el-option>
         </el-select>
       </el-form-item>
@@ -147,41 +133,26 @@ const rules = {
 }
 
 const searchOrders = async (query) => {
-  if (query) {
-    loading.value = true
-    try {
-      console.log('开始搜索订单:', query)
-      const response = await request.get('/returns/orders/', {
-        params: { search: query }
-      })
-      
-      console.log('完整响应:', response)
-      
-      if (!response || !response.results) {
-        console.error('数据格式不正确:', response)
-        throw new Error('返回数据格式不正确')
+  if (!query) {
+    orderOptions.value = []
+    return
+  }
+  try {
+    const response = await request({
+      url: '/returns/orders/',
+      method: 'get',
+      params: {
+        search: query
       }
-      
-      orderOptions.value = response.results.map(order => ({
-        id: order.id,
-        order_number: order.order_number,
-        created_at: order.created_at,
-        status_display: order.status_display
-      }))
-      
-      console.log('处理后的订单选项:', orderOptions.value)
-      
-      if (orderOptions.value.length === 0) {
-        ElMessage.warning('未找到符合条件的订单')
-      }
-    } catch (error) {
-      console.error('搜索订单失败:', error)
-      ElMessage.error(error.response?.data?.detail || error.message || '获取订单列表失败')
-      orderOptions.value = []
-    } finally {
-      loading.value = false
-    }
-  } else {
+    })
+    console.log('Search response:', response)  // 添加调试日志
+    orderOptions.value = response.data.results.map(order => ({
+      value: order.id,
+      label: `${order.order_number} (${order.created_at})`
+    }))
+  } catch (error) {
+    console.error('搜索订单失败:', error)
+    ElMessage.error('搜索订单失败')
     orderOptions.value = []
   }
 }
@@ -192,21 +163,20 @@ const handleOrderChange = async (orderId) => {
     form.product_id = ''
     return
   }
-
   try {
-    const response = await request.get(`/returns/orders/${orderId}/products/`)
-    
-    if (!response) {
-      throw new Error('返回数据为空')
-    }
-    
-    productOptions.value = response || []
-    if (productOptions.value.length === 0) {
-      ElMessage.warning('该订单没有可退换的商品')
-    }
+    const response = await request({
+      url: `/returns/orders/${orderId}/products/`,
+      method: 'get'
+    })
+    console.log('Order products response:', response)  // 添加调试日志
+    productOptions.value = response.data.map(product => ({
+      value: product.id,
+      label: `${product.name} (¥${product.price})`
+    }))
+    form.product_id = ''
   } catch (error) {
     console.error('获取订单商品失败:', error)
-    ElMessage.error(error.response?.data?.detail || error.message || '获取订单详情失败')
+    ElMessage.error('获取订单商品失败')
     productOptions.value = []
     form.product_id = ''
   }

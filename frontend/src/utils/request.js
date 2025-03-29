@@ -1,48 +1,40 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
-const request = axios.create({
-  baseURL: 'http://localhost:8000',
+const service = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   timeout: 5000
 })
 
 // 请求拦截器
-request.interceptors.request.use(
+service.interceptors.request.use(
   config => {
-    const authStore = useAuthStore()
-    if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   },
   error => {
+    console.error('Request error:', error)
     return Promise.reject(error)
   }
 )
 
 // 响应拦截器
-request.interceptors.response.use(
+service.interceptors.response.use(
   response => {
-    return response.data
+    // 直接返回响应数据
+    return response
   },
   error => {
+    console.error('Response error:', error)
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          const authStore = useAuthStore()
-          // 清除认证信息
-          authStore.clearAuth()
-          // 显示提示信息
-          ElMessage.error('登录已过期，请重新登录')
-          // 保存当前路由
-          const currentRoute = router.currentRoute.value
-          // 跳转到登录页面，并记录来源页面
-          router.push({
-            path: '/login',
-            query: { redirect: currentRoute.fullPath }
-          })
+          localStorage.removeItem('token')
+          router.push('/login')
           break
         case 403:
           ElMessage.error('没有权限访问')
@@ -56,13 +48,11 @@ request.interceptors.response.use(
         default:
           ElMessage.error(error.response.data.message || '请求失败')
       }
-    } else if (error.request) {
-      ElMessage.error('网络错误，请检查网络连接')
     } else {
-      ElMessage.error('请求配置错误')
+      ElMessage.error('网络错误，请检查网络连接')
     }
     return Promise.reject(error)
   }
 )
 
-export default request 
+export default service 

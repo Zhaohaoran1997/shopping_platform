@@ -8,84 +8,74 @@
     <el-card v-loading="loading" class="detail-card">
       <template #header>
         <div class="card-header">
-          <span>申请编号：{{ returnData.id }}</span>
-          <el-tag :type="getStatusType(returnData.status)">
-            {{ getStatusText(returnData.status) }}
+          <span>退换货详情</span>
+          <el-tag :type="getStatusType(returnDetail.status)">
+            {{ returnDetail.status_display }}
           </el-tag>
         </div>
       </template>
 
       <el-descriptions :column="2" border>
         <el-descriptions-item label="订单号">
-          {{ returnData.order?.order_no }}
+          {{ returnDetail.order_number }}
+        </el-descriptions-item>
+        <el-descriptions-item label="商品名称">
+          {{ returnDetail.product_name }}
+        </el-descriptions-item>
+        <el-descriptions-item label="商品单价">
+          ¥{{ returnDetail.product_price }}
+        </el-descriptions-item>
+        <el-descriptions-item label="退货数量">
+          {{ returnDetail.quantity }}
+        </el-descriptions-item>
+        <el-descriptions-item label="退货总价">
+          ¥{{ returnDetail.total_price }}
+        </el-descriptions-item>
+        <el-descriptions-item label="优惠金额">
+          ¥{{ returnDetail.discount_amount }}
+        </el-descriptions-item>
+        <el-descriptions-item label="实际退款金额">
+          ¥{{ returnDetail.actual_amount }}
+        </el-descriptions-item>
+        <el-descriptions-item label="退换货类型">
+          {{ returnDetail.type_display }}
+        </el-descriptions-item>
+        <el-descriptions-item label="申请原因">
+          {{ getReasonDisplay(returnDetail.reason) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="问题描述" :span="2">
+          {{ returnDetail.description || '无' }}
         </el-descriptions-item>
         <el-descriptions-item label="申请时间">
-          {{ returnData.created_at }}
+          {{ returnDetail.created_at }}
         </el-descriptions-item>
-        <el-descriptions-item label="退换类型">
-          <el-tag :type="returnData.type === 1 ? 'danger' : 'warning'">
-            {{ returnData.type_display }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="退换原因">
-          {{ returnData.reason }}
+        <el-descriptions-item label="更新时间">
+          {{ returnDetail.updated_at }}
         </el-descriptions-item>
       </el-descriptions>
 
-      <div class="product-info">
-        <h3>商品信息</h3>
-        <div v-for="item in returnData.order?.items" :key="item.id" class="product-card">
+      <div v-if="returnDetail.images && returnDetail.images.length > 0" class="image-section">
+        <h3>退换货图片</h3>
+        <el-image-viewer
+          v-if="showViewer"
+          :on-close="closeViewer"
+          :url-list="imageList"
+          :initial-index="currentImageIndex"
+        />
+        <div class="image-list">
           <el-image
-            :src="item.product_image"
-            :preview-src-list="[item.product_image]"
+            v-for="(image, index) in returnDetail.images"
+            :key="index"
+            :src="image.image"
+            :preview-src-list="imageList"
             fit="cover"
-            class="product-image"
+            class="return-image"
+            @click="showImageViewer(index)"
           />
-          <div class="product-details">
-            <h4>{{ item.product_name }}</h4>
-            <p class="price">¥{{ item.price }}</p>
-            <p class="quantity">数量：{{ item.quantity }}</p>
-            <p class="total-price">总价：¥{{ item.total_price }}</p>
-            <div v-if="item.product.specifications?.length" class="specifications">
-              <p v-for="spec in item.product.specifications" :key="spec.id">
-                {{ spec.name }}：{{ spec.value }}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div class="description-section">
-        <h3>订单信息</h3>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="收货人">
-            {{ returnData.order?.shipping_name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="联系电话">
-            {{ returnData.order?.shipping_phone }}
-          </el-descriptions-item>
-          <el-descriptions-item label="收货地址">
-            {{ returnData.order?.shipping_province }}{{ returnData.order?.shipping_city }}{{ returnData.order?.shipping_district }}{{ returnData.order?.shipping_address_detail }}
-          </el-descriptions-item>
-          <el-descriptions-item label="支付方式">
-            {{ returnData.order?.payment_method === 'alipay' ? '支付宝' : '微信支付' }}
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-
-      <div v-if="returnData.images?.length" class="images-section">
-        <h3>问题图片</h3>
-        <el-image
-          v-for="(image, index) in returnData.images"
-          :key="index"
-          :src="image"
-          :preview-src-list="returnData.images"
-          fit="cover"
-          class="problem-image"
-        />
-      </div>
-
-      <div v-if="returnData.status === 3" class="shipping-info">
+      <div v-if="returnDetail.status === 3" class="shipping-info">
         <h3>物流信息</h3>
         <el-form
           ref="shippingFormRef"
@@ -110,11 +100,11 @@
         </el-form>
       </div>
 
-      <div v-if="returnData.order?.shipping_no" class="shipping-details">
+      <div v-if="returnDetail.shipping_no" class="shipping-details">
         <h3>物流信息</h3>
         <el-descriptions :column="2" border>
           <el-descriptions-item label="物流单号">
-            {{ returnData.order.shipping_no }}
+            {{ returnDetail.shipping_no }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -126,13 +116,16 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import request from '@/utils/request'
+import { getReturnDetail } from '@/api/returns'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
-const returnData = ref({})
+const returnDetail = ref({})
 const shippingFormRef = ref(null)
+const showViewer = ref(false)
+const currentImageIndex = ref(0)
+const imageList = ref([])
 
 const shippingForm = ref({
   shipping_company: '',
@@ -146,57 +139,43 @@ const shippingRules = {
 
 const getStatusType = (status) => {
   const types = {
-    1: 'warning',    // 待处理
-    2: 'danger',     // 已拒绝
-    3: 'primary',    // 已通过
-    4: 'success'     // 已完成
+    0: 'warning',  // 待审核
+    1: 'success',  // 已通过
+    2: 'danger',   // 已拒绝
+    3: 'info'      // 已完成
   }
   return types[status] || 'info'
 }
 
-const getStatusText = (status) => {
-  const texts = {
-    1: '待处理',
-    2: '已拒绝',
-    3: '已通过',
-    4: '已完成'
-  }
-  return texts[status] || status
-}
-
-const getReasonText = (reason) => {
-  const texts = {
-    quality: '商品质量问题',
-    description: '商品与描述不符',
-    damaged: '商品损坏',
+const getReasonDisplay = (reason) => {
+  const reasons = {
+    quality: '质量问题',
+    wrong: '发错商品',
+    damage: '商品损坏',
     other: '其他原因'
   }
-  return texts[reason] || reason
+  return reasons[reason] || reason
 }
 
-const getShippingCompanyText = (company) => {
-  const texts = {
-    SF: '顺丰速运',
-    ZTO: '中通快递',
-    YTO: '圆通速递',
-    YD: '韵达快递'
-  }
-  return texts[company] || company
+const showImageViewer = (index) => {
+  currentImageIndex.value = index
+  showViewer.value = true
+}
+
+const closeViewer = () => {
+  showViewer.value = false
 }
 
 const fetchReturnDetail = async () => {
-  loading.value = true
   try {
-    const response = await request({
-      url: `/returns/requests/${route.params.id}/`,
-      method: 'get'
-    })
-    returnData.value = response
+    const response = await getReturnDetail(route.params.id)
+    console.log('Return detail response:', response)  // 添加调试日志
+    returnDetail.value = response.data
+    // 更新图片列表
+    imageList.value = returnDetail.value.images.map(img => img.image)
   } catch (error) {
     console.error('获取退换货详情失败:', error)
-    ElMessage.error(error.message || '获取退换货详情失败')
-  } finally {
-    loading.value = false
+    ElMessage.error('获取退换货详情失败')
   }
 }
 
@@ -294,5 +273,23 @@ onMounted(() => {
 
 .shipping-info {
   max-width: 500px;
+}
+
+.image-section {
+  margin-top: 20px;
+}
+
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.return-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style> 

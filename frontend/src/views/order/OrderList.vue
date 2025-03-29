@@ -107,8 +107,8 @@ const fetchOrders = async () => {
       page: currentPage.value,
       page_size: pageSize.value
     })
-    orders.value = response.results
-    total.value = response.count
+    orders.value = response.data.results
+    total.value = response.data.count
   } catch (error) {
     console.error('获取订单列表失败:', error)
     ElMessage.error('获取订单列表失败')
