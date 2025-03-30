@@ -136,12 +136,12 @@ const fetchOrderDetail = async () => {
     console.log('Raw API Response:', response)
 
     // 检查响应数据
-    if (!response) {
-      throw new Error('API 响应为空')
+    if (!response || !response.results || response.results.length === 0) {
+      throw new Error('未找到订单信息')
     }
 
-    // 假设响应数据在 response.data 中
-    const orderData = response.data || response
+    // 获取第一个订单数据
+    const orderData = response.results[0]
     console.log('Order data before processing:', orderData)
     
     // 确保所有必需的字段都有默认值

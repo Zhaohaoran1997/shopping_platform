@@ -139,16 +139,17 @@ const searchOrders = async (query) => {
   }
   try {
     const response = await request({
-      url: '/returns/orders/',
+      url: '/orders/orders/',
       method: 'get',
       params: {
-        search: query
+        order_no: query
       }
     })
-    console.log('Search response:', response)  // 添加调试日志
+    console.log('Search response:', response)
     orderOptions.value = response.data.results.map(order => ({
       value: order.id,
-      label: `${order.order_number} (${order.created_at})`
+      label: `${order.order_no} (${order.created_at})`,
+      items: order.items // 保存订单项数据
     }))
   } catch (error) {
     console.error('搜索订单失败:', error)
@@ -163,23 +164,18 @@ const handleOrderChange = async (orderId) => {
     form.product_id = ''
     return
   }
-  try {
-    const response = await request({
-      url: `/returns/orders/${orderId}/products/`,
-      method: 'get'
-    })
-    console.log('Order products response:', response)  // 添加调试日志
-    productOptions.value = response.data.map(product => ({
-      value: product.id,
-      label: `${product.name} (¥${product.price})`
+  
+  // 从已搜索的订单中获取商品数据
+  const selectedOrder = orderOptions.value.find(order => order.value === orderId)
+  if (selectedOrder && selectedOrder.items) {
+    productOptions.value = selectedOrder.items.map(item => ({
+      value: item.product.id,
+      label: `${item.product_name} (¥${item.price})`
     }))
-    form.product_id = ''
-  } catch (error) {
-    console.error('获取订单商品失败:', error)
-    ElMessage.error('获取订单商品失败')
+  } else {
     productOptions.value = []
-    form.product_id = ''
   }
+  form.product_id = ''
 }
 
 const handlePictureCardPreview = (file) => {

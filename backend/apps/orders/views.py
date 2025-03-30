@@ -20,8 +20,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """获取用户的订单列表"""
-        return Order.objects.filter(user=self.request.user)
+        """获取用户的订单列表，支持按订单号搜索"""
+        queryset = Order.objects.filter(user=self.request.user)
+        order_no = self.request.query_params.get('order_no', None)
+        if order_no:
+            queryset = queryset.filter(order_no=order_no)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
