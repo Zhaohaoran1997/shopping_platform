@@ -19,9 +19,9 @@
               :value="address.id"
             />
           </el-select>
-          <el-button type="primary" link @click="showAddressDialog = true">
+          <!-- <el-button type="primary" link @click="showAddressDialog = true">
             添加新地址
-          </el-button>
+          </el-button> -->
         </el-form-item>
 
         <!-- 商品信息 -->
@@ -245,11 +245,11 @@ const initData = async () => {
   try {
     // 获取地址列表
     const addressResponse = await getAddressList()
-    addresses.value = addressResponse.results
+    addresses.value = addressResponse.data.results
 
     // 获取可用优惠券
     const couponResponse = await getAvailableCoupons()
-    availableCoupons.value = couponResponse.results.map(item => ({
+    availableCoupons.value = couponResponse.data.results.map(item => ({
       id: item.id,
       name: item.coupon.name,
       type: item.coupon.type,
@@ -303,7 +303,7 @@ const handleAddAddress = async () => {
     showAddressDialog.value = false
     // 刷新地址列表
     const response = await getAddressList()
-    addresses.value = response.results
+    addresses.value = response.data.results
   } catch (error) {
     ElMessage.error('地址添加失败')
   }

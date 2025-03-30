@@ -140,19 +140,36 @@ const fetchOrderDetail = async () => {
       throw new Error('API 响应为空')
     }
 
-    console.log('Order data before processing:', response)
-
+    // 假设响应数据在 response.data 中
+    const orderData = response.data || response
+    console.log('Order data before processing:', orderData)
+    
+    // 确保所有必需的字段都有默认值
     order.value = {
-      ...response,
-      items: response.items?.map(item => ({
-        ...item,
-        product: {
-          ...item.product,
-          specifications: item.product?.specifications || []
-        }
-      })) || []
+      order_no: '',
+      created_at: '',
+      status: 0,
+      status_display: '',
+      payment_method: '',
+      payment_method_display: '',
+      shipping_name: '',
+      shipping_phone: '',
+      shipping_province: '',
+      shipping_city: '',
+      shipping_district: '',
+      shipping_address_detail: '',
+      items: [],
+      total_amount: '0.00',
+      shipping_fee: '0.00',
+      discount_amount: '0.00',
+      final_amount: '0.00',
+      ...orderData
     }
+    
     console.log('Final processed order data:', order.value)
+    console.log('Order items:', order.value.items)
+    console.log('Order status:', order.value.status)
+    console.log('Order total amount:', order.value.total_amount)
   } catch (error) {
     console.error('获取订单详情失败:', error)
     console.error('错误详情:', {
